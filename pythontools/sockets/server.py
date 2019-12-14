@@ -1,0 +1,107 @@
+from pythontools.core import logger, events
+import socket, json, base64
+from threading import Thread
+
+class Server:
+
+    def __init__(self, password):
+        self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.password = password
+        self.clientSocks = []
+        self.clients = []
+        self.seq = base64.b64encode(self.password.encode('ascii')).decode("utf-8")
+        self.packagePrintBlacklist = []
+        self.packagePrintBlacklist.append("ALIVE")
+        self.packagePrintBlacklist.append("ALIVE_OK")
+
+    def start(self, host="", port=0, maxClients=10):
+        if host == "":
+            host = socket.gethostbyname(socket.gethostname())
+        logger.log("§8[§eSERVER§8] §6Starting...")
+        try:
+            self.serverSocket.bind((host, port))
+            self.serverSocket.listen(maxClients)
+            logger.log("§8[§eSERVER§8] §aListen on §6" + str((host, port)))
+        except Exception as e:
+            logger.log("§8[§eSERVER§8] §8[§cERROR§8] §cFailed: " + str(e))
+            self.error = 1
+        def clientTask(clientSocket, address):
+            logger.log("§8[§eSERVER§8] §aClient connected from §6" + str(address))
+            while True:
+                try:
+                    recvData = clientSocket.recv(32768)
+                    recvData = str(recvData, "utf-8")
+                    if recvData != "":
+                        if "}" + self.seq + "{" in recvData:
+                            recvDataList = recvData.split("}" + self.seq + "{")
+                            recvData = "["
+                            for i in range(len(recvDataList)):
+                                recvData += recvDataList[i].replace(self.seq, "")
+                                if i + 1 < len(recvDataList):
+                                    recvData += "}, {"
+                            recvData += "]"
+                        elif "}" + self.seq in recvData:
+                            recvData = "[" + recvData.replace(self.seq, "") + "]"
+                        recvData = json.loads(recvData)
+                        for data in recvData:
+                            if data["METHOD"] == "AUTHENTICATION":
+                                logger.log("§8[§eSERVER§8] §r[IN] " + data["METHOD"])
+                                if data["PASSWORD"] == self.password:
+                                    client = {"clientSocket": clientSocket, "clientID": data["CLIENT_ID"], "clientType": data["CLIENT_TYPE"]}
+                                    self.clients.append(client)
+                                    self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_OK"})
+                                    logger.log("§8[§eSERVER§8] §aClient '" + data["CLIENT_ID"] + "' authenticated")
+                                    events.call("ON_CLIENT_CONNECT", params=[client])
+                                else:
+                                    self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
+                                    break
+                            else:
+                                client = self.getClient(clientSocket)
+                                if client is not None:
+                                    if data["METHOD"] not in self.packagePrintBlacklist:
+                                        logger.log("§8[§eSERVER§8] §r[IN] " + data["METHOD"])
+                                    events.call("ON_RECEIVE", [self, client, clientSocket, data])
+                                else:
+                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cNot authenticated Package: " + data["METHOD"])
+                except Exception as e:
+                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cExeption: " + str(e))
+                    break
+            self.clientSocks.remove(clientSocket)
+            for client in self.clients:
+                if client["clientSocket"] == clientSocket:
+                    events.call("ON_CLIENT_DISCONNECT", params=[client])
+                    self.clients.remove(client)
+            clientSocket.close()
+            logger.log("§8[§eSERVER§8] §6Client disconnected")
+        while True:
+            (client, clientAddress) = self.serverSocket.accept()
+            self.clientSocks.append(client)
+            Thread(target=clientTask, args=[client, clientAddress]).start()
+
+    def addPackageToPrintBlacklist(self, package):
+        self.packagePrintBlacklist.append(package)
+
+    def getClient(self, clientSocket):
+        for client in self.clients:
+            if client["clientSocket"] == clientSocket:
+                return client
+        return None
+
+    def sendToAll(self, message):
+        for sSock in self.clientSocks:
+            self.sendTo(sSock, message)
+
+    def sendTo(self, sock, data):
+        sock.send(bytes(json.dumps(data) + self.seq, "utf-8"))
+        if data["METHOD"] not in self.packagePrintBlacklist:
+            logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
+
+    def sendToClient(self, clientID, data):
+        for client in self.clients:
+            if client["clientID"] == clientID:
+                self.sendTo(clientID["clientSocket"], data)
+
+    def close(self):
+        self.serverSocket.close()
+        logger.log("§8[§eSERVER§8] §6Closed")
+
