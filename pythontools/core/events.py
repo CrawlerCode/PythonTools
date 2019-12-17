@@ -19,4 +19,4 @@ def call(trigger, params=None):
                 else:
                     event["event"](params)
     except Exception as e:
-        logger.log("§cEvent Exception: " + str(e))
+        logger.log("§cEvent '" + trigger + "' throw exception: " + str(e))

@@ -8,8 +8,7 @@ def ON_CONNECT(params):
     pass
 
 def ON_RECEIVE(params):
-    client = params[0]
-    data = params[1]
+    data = params[0]
     METHOD = data["METHOD"]
     # recipe the test message
     if METHOD == "TEST":

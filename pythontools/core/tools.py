@@ -70,25 +70,17 @@ def createFile(path):
     file.close()
 
 def createDirectory(path):
-    try:
-        os.mkdir(path)
-    except:
-        pass
-
-def deleteFile(path):
-    os.remove(path)
+    os.mkdir(path)
 
 def clearFile(path):
     file = open(path, "w")
     file.close()
 
 def existFile(path):
-    try:
-        f = open(path, "r")
-        f.close()
-        return True
-    except (FileNotFoundError, PermissionError):
-        return False
+    return os.path.isfile(path)
+
+def existDirectory(path):
+    return os.path.isdir(path)
 
 def copyFile(file, dir_path):
     if os.path.isdir(file):
@@ -101,13 +93,12 @@ def copyFile(file, dir_path):
 def removeFile(path):
     os.remove(path)
 
-
 def clearDirectory(path):
     for f in os.listdir(path):
         if os.path.isdir(path + "\\" + f):
             clearDirectory(path + "\\" + os.path.basename(f))
         else:
-            deleteFile(path + "\\" + f)
+            removeFile(path + "\\" + f)
 
 def loadJson(path):
     with open(path, "r", encoding='utf-8') as json_data:

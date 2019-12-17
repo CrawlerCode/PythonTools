@@ -27,11 +27,21 @@ class Server:
             self.error = 1
         def clientTask(clientSocket, address):
             logger.log("§8[§eSERVER§8] §aClient connected from §6" + str(address))
+            lastData = ""
             while True:
                 try:
                     recvData = clientSocket.recv(32768)
                     recvData = str(recvData, "utf-8")
                     if recvData != "":
+                        if not recvData.startswith("{"):
+                            if recvData.endswith("}" + self.seq):
+                                if lastData != "":
+                                    recvData = lastData + recvData
+                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                        if not recvData.endswith("}" + self.seq):
+                            lastData += recvData
+                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
+                            continue
                         if "}" + self.seq + "{" in recvData:
                             recvDataList = recvData.split("}" + self.seq + "{")
                             recvData = "["
@@ -40,8 +50,10 @@ class Server:
                                 if i + 1 < len(recvDataList):
                                     recvData += "}, {"
                             recvData += "]"
+                            lastData = ""
                         elif "}" + self.seq in recvData:
                             recvData = "[" + recvData.replace(self.seq, "") + "]"
+                            lastData = ""
                         recvData = json.loads(recvData)
                         for data in recvData:
                             if data["METHOD"] == "AUTHENTICATION":
@@ -60,11 +72,11 @@ class Server:
                                 if client is not None:
                                     if data["METHOD"] not in self.packagePrintBlacklist:
                                         logger.log("§8[§eSERVER§8] §r[IN] " + data["METHOD"])
-                                    events.call("ON_RECEIVE", [self, client, clientSocket, data])
+                                    events.call("ON_RECEIVE", [client, data])
                                 else:
-                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cNot authenticated Package: " + data["METHOD"])
+                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving not authenticated package: §r" + data["METHOD"])
                 except Exception as e:
-                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cExeption: " + str(e))
+                    logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
                     break
             self.clientSocks.remove(clientSocket)
             for client in self.clients:
@@ -92,9 +104,14 @@ class Server:
             self.sendTo(sSock, message)
 
     def sendTo(self, sock, data):
-        sock.send(bytes(json.dumps(data) + self.seq, "utf-8"))
-        if data["METHOD"] not in self.packagePrintBlacklist:
-            logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
+        try:
+            sock.send(bytes(json.dumps(data) + self.seq, "utf-8"))
+            if data["METHOD"] not in self.packagePrintBlacklist:
+                logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
+        except Exception as e:
+            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cFailed to send data: " + str(e))
+            if e == BrokenPipeError:
+                sock.close()
 
     def sendToClient(self, clientID, data):
         for client in self.clients:

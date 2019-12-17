@@ -17,7 +17,7 @@ class Client:
         self.packagePrintBlacklist.append("ALIVE")
         self.packagePrintBlacklist.append("ALIVE_OK")
 
-    def connect(self, host, port, first=True):
+    def connect(self, host, port, first=True, aliveInterval=10):
         logger.log("§8[§eCLIENT§8] §6Connecting...")
         try:
             self.clientSocket.connect((socket.gethostbyname(host), port))
@@ -30,11 +30,21 @@ class Client:
         def clientTask():
             if self.error == 0:
                 self.send({"METHOD": "AUTHENTICATION", "CLIENT_ID": self.clientID, "CLIENT_TYPE": self.clientType, "PASSWORD": self.password})
+            lastData = ""
             while self.error == 0:
                 try:
                     recvData = self.clientSocket.recv(32768)
                     recvData = str(recvData, "utf-8")
                     if recvData != "":
+                        if not recvData.startswith("{"):
+                            if recvData.endswith("}" + self.seq):
+                                if lastData != "":
+                                    recvData = lastData + recvData
+                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                        if not recvData.endswith("}" + self.seq):
+                            lastData += recvData
+                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
+                            continue
                         if "}" + self.seq + "{" in recvData:
                             recvDataList = recvData.split("}" + self.seq + "{")
                             recvData = "["
@@ -43,8 +53,10 @@ class Client:
                                 if i + 1 < len(recvDataList):
                                     recvData += "}, {"
                             recvData += "]"
+                            lastData = ""
                         elif "}" + self.seq in recvData:
                             recvData = "[" + recvData.replace(self.seq, "") + "]"
+                            lastData = ""
                         recvData = json.loads(recvData)
                         for data in recvData:
                             if data["METHOD"] == "AUTHENTICATION_FAILED":
@@ -55,13 +67,14 @@ class Client:
                                 events.call("ON_CONNECT", params=[])
                                 for package in self.lostPackages:
                                     self.send(package)
+                                self.lostPackages.clear()
                             else:
                                 if data["METHOD"] not in self.packagePrintBlacklist:
                                     logger.log("§8[§eCLIENT§8] §r[IN] " + data["METHOD"])
-                                events.call("ON_RECEIVE", params=[self, data])
+                                events.call("ON_RECEIVE", params=[data])
                 except Exception as e:
                     self.error = 1
-                    logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cExeption: " + str(e))
+                    logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
                     break
             self.clientSocket.close()
             self.connected = False
@@ -72,22 +85,22 @@ class Client:
                 self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.connect(host, port, False)
 
-        self.startAlive()
+        self.startAlive(aliveInterval)
         if first is True:
             Thread(target=clientTask).start()
         else:
             clientTask()
 
-    def startAlive(self):
+    def startAlive(self, aliveInterval=10):
         def alive():
-            time.sleep(10)
+            time.sleep(aliveInterval)
             while self.error == 0:
                 try:
                     self.send({"METHOD": "ALIVE"})
                 except:
                     self.error = 1
                     break
-                time.sleep(10)
+                time.sleep(aliveInterval)
         Thread(target=alive).start()
 
     def addPackageToPrintBlacklist(self, package):

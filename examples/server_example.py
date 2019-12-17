@@ -11,9 +11,8 @@ def ON_CLIENT_DISCONNECT(params):
     client = params[0]
 
 def ON_RECEIVE(params):
-    server = params[0]
-    clientSocket = params[1]
-    data = params[2]
+    client = params[0]
+    data = params[1]
     METHOD = data["METHOD"]
 
 events.registerEvent("ON_CLIENT_CONNECT", ON_CLIENT_CONNECT)
