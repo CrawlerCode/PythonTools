@@ -14,7 +14,7 @@ class Server:
         self.packagePrintBlacklist.append("ALIVE")
         self.packagePrintBlacklist.append("ALIVE_OK")
 
-    def start(self, host="", port=0, maxClients=10):
+    def start(self, host="", port=0, maxClients=10, printUnsignedData=True):
         if host == "":
             host = socket.gethostbyname(socket.gethostname())
         logger.log("§8[§eSERVER§8] §6Starting...")
@@ -37,10 +37,12 @@ class Server:
                             if recvData.endswith("}" + self.seq):
                                 if lastData != "":
                                     recvData = lastData + recvData
-                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                                    if printUnsignedData:
+                                        logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
                         if not recvData.endswith("}" + self.seq):
                             lastData += recvData
-                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
+                            if printUnsignedData:
+                                logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
                             continue
                         if "}" + self.seq + "{" in recvData:
                             recvDataList = recvData.split("}" + self.seq + "{")

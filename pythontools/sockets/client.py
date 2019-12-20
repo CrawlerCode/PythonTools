@@ -4,7 +4,7 @@ from threading import Thread
 
 class Client:
 
-    def __init__(self, password, clientID, clientType):
+    def __init__(self, password, clientID, clientType, reconnect=True):
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.password = password
         self.clientID = clientID
@@ -16,8 +16,9 @@ class Client:
         self.packagePrintBlacklist = []
         self.packagePrintBlacklist.append("ALIVE")
         self.packagePrintBlacklist.append("ALIVE_OK")
+        self.reconnect = reconnect
 
-    def connect(self, host, port, first=True, aliveInterval=10):
+    def connect(self, host, port, first=True, aliveInterval=10, printUnsignedData=True):
         logger.log("§8[§eCLIENT§8] §6Connecting...")
         try:
             self.clientSocket.connect((socket.gethostbyname(host), port))
@@ -40,10 +41,12 @@ class Client:
                             if recvData.endswith("}" + self.seq):
                                 if lastData != "":
                                     recvData = lastData + recvData
-                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                                    if printUnsignedData:
+                                        logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
                         if not recvData.endswith("}" + self.seq):
                             lastData += recvData
-                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
+                            if printUnsignedData:
+                                logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
                             continue
                         if "}" + self.seq + "{" in recvData:
                             recvDataList = recvData.split("}" + self.seq + "{")
@@ -79,11 +82,12 @@ class Client:
             self.clientSocket.close()
             self.connected = False
             logger.log("§8[§eCLIENT§8] §6Disconnected")
-            if self.error != 100:
-                logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
-                time.sleep(10)
-                self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.connect(host, port, False)
+            if self.reconnect is True:
+                if self.error != 100:
+                    logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
+                    time.sleep(10)
+                    self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.connect(host, port, False, aliveInterval, printUnsignedData)
 
         self.startAlive(aliveInterval)
         if first is True:
@@ -116,7 +120,7 @@ class Client:
                 self.lostPackages.append(data)
 
     def disconnect(self):
+        self.error = 100
         self.clientSocket.close()
         self.connected = False
-        self.error = 100
         logger.log("§8[§eCLIENT§8] §6Disconnected")

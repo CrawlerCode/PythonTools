@@ -38,7 +38,7 @@ Logger
     from pythontools.core import logger
 
     # path to logs directory (not necessary)
-    logger.initLog("logs")
+    logger.initLogDirectory("logs")
 
     # print color test
     logger.log("§1Blue §9Light-Blue §3Cyan §bLight-Cyan §4Red §cLight-Red §6Yellow §eLight-Yellow §2Green §aLight-Green §5Magenta §dLight-Magenta §fWhite §7Light-Gray §8Gray §0Black")

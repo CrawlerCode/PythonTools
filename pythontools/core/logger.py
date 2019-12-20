@@ -9,7 +9,7 @@ logs = []
 logPath = ""
 logFile = ""
 
-def initLog(path):
+def initLogDirectory(path):
     global logFile, logPath
     logPath = path
     logFile = path + "/" + time.strftime("log_%Y_%m_%d_%H_%M_%S", time.localtime()) + ".txt"
@@ -54,6 +54,13 @@ def error(error):
     except:
         pass
     print(outLog)
+
+def writeToLogFile(message):
+    outLog = "§f" + "[" + time.strftime("%H:%M:%S", time.localtime()) + "] §r" + message
+    try:
+        tools.appendToFile(logFile, outLog)
+    except:
+        pass
 
 def log(message):
     outLog = "§f" + "[" + time.strftime("%H:%M:%S", time.localtime()) + "] §r" + message
