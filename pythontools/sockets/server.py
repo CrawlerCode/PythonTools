@@ -21,7 +21,7 @@ class Server:
         try:
             self.serverSocket.bind((host, port))
             self.serverSocket.listen(maxClients)
-            logger.log("§8[§eSERVER§8] §aListen on §6" + str((host, port)))
+            logger.log("§8[§eSERVER§8] §aListening on §6" + str((host, port)))
         except Exception as e:
             logger.log("§8[§eSERVER§8] §8[§cERROR§8] §cFailed: " + str(e))
             self.error = 1
@@ -78,7 +78,7 @@ class Server:
                                 else:
                                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving not authenticated package: §r" + data["METHOD"])
                 except Exception as e:
-                    logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
+                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e))
                     break
             self.clientSocks.remove(clientSocket)
             for client in self.clients:

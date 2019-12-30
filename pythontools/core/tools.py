@@ -70,7 +70,10 @@ def createFile(path):
     file.close()
 
 def createDirectory(path):
-    os.mkdir(path)
+    try:
+        os.mkdir(path)
+    except:
+        pass
 
 def clearFile(path):
     file = open(path, "w")
