@@ -17,6 +17,7 @@ class Client:
         self.packagePrintBlacklist.append("ALIVE")
         self.packagePrintBlacklist.append("ALIVE_OK")
         self.reconnect = reconnect
+        self.waitReceived = None
 
     def connect(self, host, port, first=True, aliveInterval=10, printUnsignedData=True):
         logger.log("§8[§eCLIENT§8] §6Connecting...")
@@ -83,11 +84,10 @@ class Client:
             self.connected = False
             logger.log("§8[§eCLIENT§8] §6Disconnected")
             if self.reconnect is True:
-                if self.error != 100:
-                    logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
-                    time.sleep(10)
-                    self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    self.connect(host, port, False, aliveInterval, printUnsignedData)
+                logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
+                time.sleep(10)
+                self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.connect(host, port, False, aliveInterval, printUnsignedData)
 
         self.startAlive(aliveInterval)
         if first is True:
@@ -119,8 +119,22 @@ class Client:
             if not self.connected:
                 self.lostPackages.append(data)
 
+    def sendPackageAndWaitForPackage(self, package, method, maxTime=1.5):
+        self.waitReceived = None
+        def ON_RECEIVE(params):
+            if params[0]["METHOD"] == method:
+                self.waitReceived = params[0]
+        events.registerEvent("ON_RECEIVE", ON_RECEIVE)
+        self.send(package)
+        startTime = time.time()
+        while self.waitReceived is None and (time.time() - startTime) <= maxTime:
+            pass
+        events.unregisterEvent(ON_RECEIVE)
+        return self.waitReceived
+
+
     def disconnect(self):
-        self.error = 100
+        self.reconnect = False
         self.clientSocket.close()
         self.connected = False
         logger.log("§8[§eCLIENT§8] §6Disconnected")
