@@ -1,4 +1,3 @@
-from time import gmtime, strftime
 import random, json, os, codecs, shutil
 
 def getFileContent(path):

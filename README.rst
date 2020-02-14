@@ -111,6 +111,8 @@ Server and Client (sockets)
 
     def ON_CLIENT_CONNECT(params):
         client = params[0]
+        # send a message to client on connect by clientSocket
+        SERVER.sendTo(client["clientSocket"], {"METHOD": "HELLO"})
 
     def ON_CLIENT_DISCONNECT(params):
         client = params[0]
@@ -126,7 +128,7 @@ Server and Client (sockets)
 
     Thread(target=SERVER.start, args=["HOST-IP", 15749]).start()
 
-    # send client a message
+    # send a message to client by clientID
     SERVER.sendToClient("MY_CLIENT_ID", {"METHOD": "TEST", "mydata": "123"})
 ..
 
@@ -153,5 +155,5 @@ Server and Client (sockets)
     events.registerEvent("ON_CONNECT", ON_CONNECT)
     events.registerEvent("ON_RECEIVE", ON_RECEIVE)
 
-    Thread(target=CLIENT.connect, args=["HOST-IP", 15749, True]).start()
+    Thread(target=CLIENT.connect, args=["HOST-IP", 15749]).start()
 

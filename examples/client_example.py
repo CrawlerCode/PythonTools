@@ -17,4 +17,4 @@ def ON_RECEIVE(params):
 events.registerEvent("ON_CONNECT", ON_CONNECT)
 events.registerEvent("ON_RECEIVE", ON_RECEIVE)
 
-Thread(target=CLIENT.connect, args=["HOST-IP", 15749, True]).start()
+Thread(target=CLIENT.connect, args=["HOST-IP", 15749]).start()
