@@ -1,6 +1,7 @@
-from pythontools.core import logger, events
+from pythontools.core import logger, events, tools
 import socket, json, base64
 from threading import Thread
+from pythontools.dev import crypthography
 
 class Server:
 
@@ -16,10 +17,23 @@ class Server:
         self.maxClients = 10
         self.printUnsignedData = True
         self.eventScope = "global"
+        self.encrypt = False
+        self.server_private_key = None
+        self.client_public_key = None
 
-    def start(self, host="", port=0):
-        if host == "":
-            host = socket.gethostbyname(socket.gethostname())
+    def start(self, host, port):
+        if self.encrypt is True:
+            if not tools.existFile("server_private_key.pem"):
+                crypthography.generateKey(private_key="server_private_key.pem", public_key="server_public_key.pem")
+                logger.log("§8[§eSERVER§8] §aNew key created")
+            self.server_private_key = crypthography.getPrivateKey(private_key="server_private_key.pem")
+            if tools.existFile("client_public_key.pem"):
+                self.client_public_key = crypthography.getPublicKey(public_key="client_public_key.pem")
+            else:
+                logger.log("§8[§eSERVER§8] §8[§cERROR§8] §cFailed to load 'client_public_key.pem'")
+                self.error = 1
+                return
+        #host = socket.gethostbyname(socket.gethostname())
         logger.log("§8[§eSERVER§8] §6Starting...")
         try:
             self.serverSocket.bind((host, port))
@@ -51,17 +65,27 @@ class Server:
                             recvDataList = recvData.split("}" + self.seq + "{")
                             recvData = "["
                             for i in range(len(recvDataList)):
-                                recvData += recvDataList[i].replace(self.seq, "")
-                                if i + 1 < len(recvDataList):
-                                    recvData += "}, {"
+                                if self.encrypt is True:
+                                    recvData += crypthography.decrypt(self.server_private_key, base64.b64decode(recvDataList[i].replace("}" + self.seq, "")[1:].encode('ascii')))
+                                    if i + 1 < len(recvDataList):
+                                        recvData += ", "
+                                else:
+                                    recvData += recvDataList[i].replace(self.seq, "")
+                                    if i + 1 < len(recvDataList):
+                                        recvData += "}, {"
                             recvData += "]"
                             lastData = ""
                         elif "}" + self.seq in recvData:
-                            recvData = "[" + recvData.replace(self.seq, "") + "]"
+                            if self.encrypt is True:
+                                recvData = "[" + crypthography.decrypt(self.server_private_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))) + "]"
+                            else:
+                                recvData = "[" + recvData.replace(self.seq, "") + "]"
                             lastData = ""
                         recvData = json.loads(recvData)
                         for data in recvData:
-                            if data["METHOD"] == "AUTHENTICATION":
+                            if data["METHOD"] == "ALIVE":
+                                self.sendTo(clientSocket, {"METHOD": "ALIVE_OK"})
+                            elif data["METHOD"] == "AUTHENTICATION":
                                 logger.log("§8[§eSERVER§8] §r[IN] " + data["METHOD"])
                                 if data["PASSWORD"] == self.password:
                                     for c in self.clients:
@@ -115,7 +139,10 @@ class Server:
 
     def sendTo(self, sock, data):
         try:
-            sock.send(bytes(json.dumps(data) + self.seq, "utf-8"))
+            send_data = json.dumps(data)
+            if self.encrypt is True:
+                send_data = "{" + base64.b64encode(crypthography.encrypt(self.client_public_key, send_data)).decode('utf-8') + "}"
+            sock.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
         except Exception as e:

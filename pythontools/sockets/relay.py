@@ -8,6 +8,8 @@ class Relay:
         self.password = password
         self.relayServer = server.Server(password=self.password)
         self.clients = []
+        self.relayServerEncrypt = False
+        self.serverClientEncrypt = False
 
     def start(self, relayHost, relayPort, serverHost, serverPort):
         def ON_CLIENT_CONNECT(params):
@@ -21,6 +23,7 @@ class Relay:
 
             events.registerEvent("ON_RECEIVE", ON_RECEIVE, scope=serverClient.eventScope)
 
+            serverClient.encrypt = self.serverClientEncrypt
             Thread(target=serverClient.connect, args=[serverHost, serverPort]).start()
             self.clients.append({"relayClient": relayClient, "serverClient": serverClient})
 
@@ -41,5 +44,5 @@ class Relay:
         events.registerEvent("ON_CLIENT_CONNECT", ON_CLIENT_CONNECT)
         events.registerEvent("ON_CLIENT_DISCONNECT", ON_CLIENT_DISCONNECT)
         events.registerEvent("ON_RECEIVE", ON_RECEIVE)
-
+        self.relayServer.encrypt = self.relayServerEncrypt
         Thread(target=self.relayServer.start, args=[relayHost, relayPort]).start()

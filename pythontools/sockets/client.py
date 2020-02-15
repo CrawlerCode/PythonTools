@@ -1,6 +1,7 @@
-from pythontools.core import logger, events
+from pythontools.core import logger, events, tools
 import socket, json, time, base64
 from threading import Thread
+from pythontools.dev import crypthography
 
 class Client:
 
@@ -21,8 +22,22 @@ class Client:
         self.aliveInterval = 10
         self.printUnsignedData = True
         self.eventScope = "global"
+        self.encrypt = False
+        self.client_private_key = None
+        self.server_public_key = None
 
     def connect(self, host, port):
+        if self.encrypt is True:
+            if not tools.existFile("client_private_key.pem"):
+                crypthography.generateKey(private_key="client_private_key.pem", public_key="client_public_key.pem")
+                logger.log("§8[§eCLIENT§8] §aNew key created")
+            self.client_private_key = crypthography.getPrivateKey(private_key="client_private_key.pem")
+            if tools.existFile("server_public_key.pem"):
+                self.server_public_key = crypthography.getPublicKey(public_key="server_public_key.pem")
+            else:
+                logger.log("§8[§eSERVER§8] §8[§cERROR§8] §cFailed to load 'server_public_key.pem'")
+                self.error = 1
+                return
         def _connect(first):
             logger.log("§8[§eCLIENT§8] §6Connecting...")
             try:
@@ -57,28 +72,34 @@ class Client:
                                 recvDataList = recvData.split("}" + self.seq + "{")
                                 recvData = "["
                                 for i in range(len(recvDataList)):
-                                    recvData += recvDataList[i].replace(self.seq, "")
-                                    if i + 1 < len(recvDataList):
-                                        recvData += "}, {"
+                                    if self.encrypt is True:
+                                        recvData += crypthography.decrypt(self.client_private_key, base64.b64decode(recvDataList[i].replace("}" + self.seq, "")[1:].encode('ascii')))
+                                        if i + 1 < len(recvDataList):
+                                            recvData += ", "
+                                    else:
+                                        recvData += recvDataList[i].replace(self.seq, "")
+                                        if i + 1 < len(recvDataList):
+                                            recvData += "}, {"
                                 recvData += "]"
                                 lastData = ""
                             elif "}" + self.seq in recvData:
-                                recvData = "[" + recvData.replace(self.seq, "") + "]"
+                                if self.encrypt is True:
+                                    recvData = "[" + crypthography.decrypt(self.client_private_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))) + "]"
+                                else:
+                                    recvData = "[" + recvData.replace(self.seq, "") + "]"
                                 lastData = ""
                             recvData = json.loads(recvData)
                             for data in recvData:
+                                if data["METHOD"] not in self.packagePrintBlacklist:
+                                    logger.log("§8[§eCLIENT§8] §r[IN] " + data["METHOD"])
                                 if data["METHOD"] == "AUTHENTICATION_FAILED":
-                                    logger.log("§r[IN] " + data["METHOD"])
                                     self.error = 1
                                 elif data["METHOD"] == "AUTHENTICATION_OK":
-                                    logger.log("§8[§eCLIENT§8] §r[IN] " + data["METHOD"])
                                     events.call("ON_CONNECT", params=[], scope=self.eventScope)
                                     for package in self.lostPackages:
                                         self.send(package)
                                     self.lostPackages.clear()
                                 else:
-                                    if data["METHOD"] not in self.packagePrintBlacklist:
-                                        logger.log("§8[§eCLIENT§8] §r[IN] " + data["METHOD"])
                                     events.call("ON_RECEIVE", params=[data], scope=self.eventScope)
                     except Exception as e:
                         self.error = 1
@@ -92,7 +113,7 @@ class Client:
                     time.sleep(10)
                     self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     _connect(False)
-                self.startAlive()
+            self.startAlive()
             if first is True:
                 Thread(target=clientTask).start()
             else:
@@ -116,7 +137,10 @@ class Client:
 
     def send(self, data, savePackage=True):
         try:
-            self.clientSocket.send(bytes(json.dumps(data) + self.seq, "utf-8"))
+            send_data = json.dumps(data)
+            if self.encrypt is True:
+                send_data = "{" + base64.b64encode(crypthography.encrypt(self.server_public_key, send_data)).decode('utf-8') + "}"
+            self.clientSocket.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eCLIENT§8] §r[OUT] " + data["METHOD"])
         except:

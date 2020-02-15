@@ -7,7 +7,7 @@ def readme():
 
 setup(
     name='CrawlerCodePythonTools',
-    version='1.1.10',
+    version='1.1.11',
     packages=['pythontools.core', 'pythontools.identity', 'pythontools.sockets', 'pythontools.telegrambot', 'pythontools.dev', 'pythontools.webbot', 'pythontools.gui'],
     url='https://github.com/CrawlerCode',
     license='',
