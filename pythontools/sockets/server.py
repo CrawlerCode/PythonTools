@@ -147,7 +147,7 @@ class Server:
                 logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
         except Exception as e:
             logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cFailed to send data: " + str(e))
-            if e == BrokenPipeError:
+            if e == BrokenPipeError or "Broken pipe" in str(e):
                 sock.close()
 
     def sendToClientID(self, clientID, data):

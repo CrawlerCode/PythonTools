@@ -6,7 +6,7 @@ def getFileContent(path):
         lines = []
         file.close()
         for line in content:
-            lines.append(line.replace("\n", ""))
+            lines.append(line.replace("\n", "").replace("\r", ""))
         return lines
 
 def getLineFromFile(path, line):

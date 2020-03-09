@@ -2,7 +2,6 @@ from pythontools.core import logger
 import telegram
 from telegram.ext import CommandHandler, Updater, Filters, MessageHandler
 
-
 class TelegramBot:
 
     def __init__(self, token):
