@@ -17,4 +17,6 @@ def ON_RECEIVE(params):
 events.registerEvent("ON_CONNECT", ON_CONNECT)
 events.registerEvent("ON_RECEIVE", ON_RECEIVE)
 
+CLIENT.enableEncrypt('SECRET_KEY')
+
 Thread(target=CLIENT.connect, args=["HOST-IP", 15749]).start()

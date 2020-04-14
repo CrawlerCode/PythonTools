@@ -44,57 +44,6 @@ Logger
     logger.log("§1Blue §9Light-Blue §3Cyan §bLight-Cyan §4Red §cLight-Red §6Yellow §eLight-Yellow §2Green §aLight-Green §5Magenta §dLight-Magenta §fWhite §7Light-Gray §8Gray §0Black")
 
 
-TelegramBot
-===========
-
-.. code:: python
-
-    from pythontools.telegrambot import telegrambot
-
-    BOT = telegrambot.TelegramBot(token="TOKEN")
-    BOT.trustUserByID(id="USER-ID")
-    BOT.start()
-
-    # send message
-    BOT.sendMessage(chat_id="CHAT-ID", text="This is a message!")
-
-    # recipe messages
-    def recipeMessages(message):
-        print("message:", message.text)
-        message.reply("answer.")
-
-    BOT.registerMessageHandler(recipeMessages)
-
-    # handle commands
-    def handleCommand(command):
-        print("command: test")
-
-    BOT.registerCommand('test', handleCommand)
-
-
-WebBot
-===========
-
-    Download chromedriver or geckodriver
-        - https://chromedriver.chromium.org/downloads
-        - https://github.com/mozilla/geckodriver/releases
-
-.. code:: python
-
-    from pythontools.webbot import webbot
-
-    # Google Chrome
-    browser = webbot.WebBot().Chrome(chromedriver="chromedriver.exe")
-    # Firefox
-    browser = webbot.WebBot().Firefox(geckodriver="geckodriver.exe")
-    browser.get("https://www.google.com/")
-
-    browser.input('//*[@id="tsf"]/div[2]/div[1]/div[1]/div/div[2]/input', "what is python?")
-    browser.click('//*[@id="tsf"]/div[2]/div[1]/div[2]/div[2]/div[2]/center/input[1]')
-
-    time.sleep(10)
-
-    browser.close()
 
 Server and Client (sockets)
 ===========================
@@ -157,3 +106,27 @@ Server and Client (sockets)
 
     Thread(target=CLIENT.connect, args=["HOST-IP", 15749]).start()
 
+
+WebBot
+===========
+
+    Download chromedriver or geckodriver
+        - https://chromedriver.chromium.org/downloads
+        - https://github.com/mozilla/geckodriver/releases
+
+.. code:: python
+
+    from pythontools.webbot import webbot
+
+    # Google Chrome
+    browser = webbot.WebBot().Chrome(chromedriver="chromedriver.exe")
+    # Firefox
+    browser = webbot.WebBot().Firefox(geckodriver="geckodriver.exe")
+    browser.get("https://www.google.com/")
+
+    browser.input('//*[@id="tsf"]/div[2]/div[1]/div[1]/div/div[2]/input', "what is python?")
+    browser.click('//*[@id="tsf"]/div[2]/div[1]/div[2]/div[2]/div[2]/center/input[1]')
+
+    time.sleep(10)
+
+    browser.close()

@@ -1,33 +1,18 @@
 import hashlib, binascii, os
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.fernet import Fernet
 
-def generateKey(private_key="private_key.pem", public_key="public_key.pem"):
-    generated_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
-    generated_public_key = generated_private_key.public_key()
-    pem_private_key = generated_private_key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption())
-    pem_public_key = generated_public_key.public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo)
-    with open(private_key, 'wb') as f:
-        f.write(pem_private_key)
-    with open(public_key, 'wb') as f:
-        f.write(pem_public_key)
+def encrypt(secret_key, data):
+    if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
+    if type(data) == str: data = bytes(data, "utf-8")
+    return Fernet(secret_key).encrypt(data)
 
-def getPrivateKey(private_key="private_key.pem"):
-    with open(private_key, "rb") as key_file:
-        return serialization.load_pem_private_key(key_file.read(), password=None, backend=default_backend())
+def decrypt(secret_key, data):
+    if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
+    if type(data) == str: data = bytes(data, "utf-8")
+    return Fernet(secret_key).decrypt(data)
 
-def getPublicKey(public_key="public_key.pem"):
-    with open(public_key, "rb") as key_file:
-        return serialization.load_pem_public_key(key_file.read(), backend=default_backend())
-
-def encrypt(public_key, text):
-    return public_key.encrypt(text.encode('ascii'), padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
-
-def decrypt(private_key, text):
-    return private_key.decrypt(text, padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None)).decode("utf-8")
+def generateSecretKey():
+    return Fernet.generate_key()
 
 def hashText(text):
     salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')

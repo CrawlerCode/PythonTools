@@ -10,6 +10,20 @@ class Relay:
         self.clients = []
         self.relayServerEncrypt = False
         self.serverClientEncrypt = False
+        self.relayServer_secret_key = b''
+        self.serverClient_secret_key = b''
+
+    def enableRelayServerEncrypt(self, secret_key):
+        self.relayServerEncrypt = True
+        if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
+        if type(secret_key) != bytes: secret_key = b''
+        self.relayServer_secret_key = secret_key
+
+    def enableServerClientEncrypt(self, secret_key):
+        self.serverClientEncrypt = True
+        if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
+        if type(secret_key) != bytes: secret_key = b''
+        self.serverClient_secret_key = secret_key
 
     def start(self, relayHost, relayPort, serverHost, serverPort):
         def ON_CLIENT_CONNECT(params):
@@ -23,7 +37,7 @@ class Relay:
 
             events.registerEvent("ON_RECEIVE", ON_RECEIVE, scope=serverClient.eventScope)
 
-            serverClient.encrypt = self.serverClientEncrypt
+            if self.serverClientEncrypt is True: serverClient.enableEncrypt(self.serverClient_secret_key)
             Thread(target=serverClient.connect, args=[serverHost, serverPort]).start()
             self.clients.append({"relayClient": relayClient, "serverClient": serverClient})
 
@@ -44,5 +58,5 @@ class Relay:
         events.registerEvent("ON_CLIENT_CONNECT", ON_CLIENT_CONNECT)
         events.registerEvent("ON_CLIENT_DISCONNECT", ON_CLIENT_DISCONNECT)
         events.registerEvent("ON_RECEIVE", ON_RECEIVE)
-        self.relayServer.encrypt = self.relayServerEncrypt
+        if self.relayServerEncrypt is True: self.relayServer.enableEncrypt(self.relayServer_secret_key)
         Thread(target=self.relayServer.start, args=[relayHost, relayPort]).start()

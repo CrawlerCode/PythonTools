@@ -1,4 +1,4 @@
-from pythontools.telegrambot import telegrambot
+from pythontools.telegram import telegrambot
 
 BOT = telegrambot.TelegramBot(token="TOKEN")
 BOT.trustUserByID(id="USER-ID")

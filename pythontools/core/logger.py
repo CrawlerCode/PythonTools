@@ -13,6 +13,7 @@ def initLogDirectory(path):
     global logFile, logPath
     logPath = path
     logFile = path + "/" + time.strftime("log_%Y_%m_%d_%H_%M_%S", time.localtime()) + ".txt"
+    tools.createDirectory(path)
     tools.createFile(logFile)
 
 def getLogByDisplayname(displayname):

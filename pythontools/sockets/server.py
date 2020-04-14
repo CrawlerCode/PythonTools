@@ -18,20 +18,19 @@ class Server:
         self.printUnsignedData = True
         self.eventScope = "global"
         self.encrypt = False
-        self.server_private_key = None
-        self.client_public_key = None
+        self.secret_key = b''
+
+    def enableEncrypt(self, secret_key):
+        self.encrypt = True
+        if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
+        if type(secret_key) != bytes: secret_key = b''
+        self.secret_key = secret_key
 
     def start(self, host, port):
         if self.encrypt is True:
-            if not tools.existFile("server_private_key.pem"):
-                crypthography.generateKey(private_key="server_private_key.pem", public_key="server_public_key.pem")
-                logger.log("§8[§eSERVER§8] §aNew key created")
-            self.server_private_key = crypthography.getPrivateKey(private_key="server_private_key.pem")
-            if tools.existFile("client_public_key.pem"):
-                self.client_public_key = crypthography.getPublicKey(public_key="client_public_key.pem")
-            else:
-                logger.log("§8[§eSERVER§8] §8[§cERROR§8] §cFailed to load 'client_public_key.pem'")
-                self.error = 1
+            if self.secret_key == b'':
+                self.secret_key = crypthography.generateSecretKey()
+                logger.log("§8[§eSERVER§8] §aSecret-Key generated: " + self.secret_key.decode("utf-8"))
                 return
         #host = socket.gethostbyname(socket.gethostname())
         logger.log("§8[§eSERVER§8] §6Starting...")
@@ -66,7 +65,7 @@ class Server:
                             recvData = "["
                             for i in range(len(recvDataList)):
                                 if self.encrypt is True:
-                                    recvData += crypthography.decrypt(self.server_private_key, base64.b64decode(recvDataList[i].replace("}" + self.seq, "")[1:].encode('ascii')))
+                                    recvData += crypthography.decrypt(self.secret_key, base64.b64decode(recvDataList[i].replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8")
                                     if i + 1 < len(recvDataList):
                                         recvData += ", "
                                 else:
@@ -77,7 +76,7 @@ class Server:
                             lastData = ""
                         elif "}" + self.seq in recvData:
                             if self.encrypt is True:
-                                recvData = "[" + crypthography.decrypt(self.server_private_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))) + "]"
+                                recvData = "[" + crypthography.decrypt(self.secret_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8") + "]"
                             else:
                                 recvData = "[" + recvData.replace(self.seq, "") + "]"
                             lastData = ""
@@ -111,12 +110,12 @@ class Server:
                 except Exception as e:
                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e))
                     break
-            self.clientSocks.remove(clientSocket)
             for client in self.clients:
                 if client["clientSocket"] == clientSocket:
                     events.call("ON_CLIENT_DISCONNECT", params=[client], scope=self.eventScope)
                     logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
                     self.clients.remove(client)
+            self.clientSocks.remove(clientSocket)
             clientSocket.close()
             logger.log("§8[§eSERVER§8] §6Client disconnected")
         while True:
@@ -141,13 +140,18 @@ class Server:
         try:
             send_data = json.dumps(data)
             if self.encrypt is True:
-                send_data = "{" + base64.b64encode(crypthography.encrypt(self.client_public_key, send_data)).decode('utf-8') + "}"
+                send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
             sock.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
         except Exception as e:
             logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cFailed to send data: " + str(e))
             if e == BrokenPipeError or "Broken pipe" in str(e):
+                for client in self.clients:
+                    if client["clientSocket"] == sock:
+                        events.call("ON_CLIENT_DISCONNECT", params=[client], scope=self.eventScope)
+                        logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
+                        self.clients.remove(client)
                 sock.close()
 
     def sendToClientID(self, clientID, data):
