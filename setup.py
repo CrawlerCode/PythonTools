@@ -5,18 +5,23 @@ def readme():
         README = f.read()
     return README
 
-
-TYPE = "CORE"  # "CORE" "GUI" "WEBBOT"
+TYPE = "CORE"
 
 packages = []
 install_requires = []
-if TYPE == "CORE": packages = ['pythontools.core', 'pythontools.identity', 'pythontools.sockets', 'pythontools.dev'] and install_requires.append('colorama')
-if TYPE == "GUI": packages.append('pythontools.gui') and install_requires.append('PyQt5')
-if TYPE == "WEBBOT": packages.append('pythontools.webbot') and install_requires.append('selenium')
+if TYPE == "CORE":
+    packages = ['pythontools.core', 'pythontools.identity', 'pythontools.sockets', 'pythontools.dev']
+    install_requires.append('colorama')
+if TYPE == "GUI":
+    packages.append('pythontools.gui')
+    install_requires.append('PyQt5')
+if TYPE == "WEBBOT":
+    packages.append('pythontools.webbot')
+    install_requires.append('selenium')
 
 setup(
     name='CrawlerCodePythonTools' + ('-Gui' if TYPE == "GUI" else '-WebBot' if TYPE == "WEBBOT" else ''),
-    version='1.2.2',
+    version='1.2.4',
     packages=packages,
     url='https://github.com/CrawlerCode',
     license='',
