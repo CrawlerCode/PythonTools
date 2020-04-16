@@ -16,7 +16,7 @@ if TYPE == "WEBBOT": packages.append('pythontools.webbot') and install_requires.
 
 setup(
     name='CrawlerCodePythonTools' + ('-Gui' if TYPE == "GUI" else '-WebBot' if TYPE == "WEBBOT" else ''),
-    version='1.2.1',
+    version='1.2.2',
     packages=packages,
     url='https://github.com/CrawlerCode',
     license='',

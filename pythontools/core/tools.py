@@ -106,7 +106,7 @@ def loadJson(path):
         json_data.close()
         return data
 
-def saveJson(path, data):
+def saveJson(path, data, indent=None):
     with open(path, "w", encoding='utf-8') as json_data:
-        json.dump(data, json_data)
+        json.dump(data, json_data, indent=indent)
         json_data.close()
