@@ -1,4 +1,4 @@
-import time, pickle, os
+import time, pickle
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from pythontools.core import tools, logger
@@ -6,12 +6,14 @@ from pythontools.core import tools, logger
 
 class WebBot:
 
-    def Chrome(self, chromedriver, hide=False, user_agent=None):
+    def Chrome(self, chromedriver, hide=False, user_agent=None, arguments=[]):
         chrome_options = Options()
         if hide is True:
             chrome_options.add_argument("--headless")
         if user_agent is not None:
             chrome_options.add_argument("user-agent=" + user_agent)
+        for argument in arguments:
+            chrome_options.add_argument(argument)
         if tools.existFile(chromedriver):
             if user_agent is not None or hide is True:
                 self.driver = webdriver.Chrome(executable_path=chromedriver.replace(".exe", ""), chrome_options=chrome_options)

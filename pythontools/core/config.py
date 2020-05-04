@@ -20,7 +20,7 @@ class Config(object):
     def reloadConfig(self):
         if not tools.existFile(self.path + "config.json"):
             tools.createFile(self.path + "config.json")
-            tools.saveJson(self.path + "config.json", self.default_config)
+            tools.saveJson(self.path + "config.json", self.default_config, indent=4)
         self.config = tools.loadJson(self.path + "config.json")
         global cfg
         cfg = self
@@ -29,7 +29,7 @@ class Config(object):
         return self.config
 
     def saveConfig(self):
-        tools.saveJson(self.path + "config.json", self.config)
+        tools.saveJson(self.path + "config.json", self.config, indent=4)
 
 def setConfig(config):
     global cfg

@@ -1,4 +1,4 @@
-from pythontools.core import logger, events, tools
+from pythontools.core import logger, events
 import socket, json, base64
 from threading import Thread
 from pythontools.dev import crypthography
@@ -7,6 +7,7 @@ class Server:
 
     def __init__(self, password):
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.password = password
         self.clientSocks = []
         self.clients = []
@@ -108,6 +109,7 @@ class Server:
                                 else:
                                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving not authenticated package: §r" + data["METHOD"])
                 except Exception as e:
+                    print(e)
                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e))
                     break
             for client in self.clients:
@@ -118,6 +120,7 @@ class Server:
             self.clientSocks.remove(clientSocket)
             clientSocket.close()
             logger.log("§8[§eSERVER§8] §6Client disconnected")
+
         while True:
             (client, clientAddress) = self.serverSocket.accept()
             self.clientSocks.append(client)
