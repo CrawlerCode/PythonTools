@@ -96,7 +96,7 @@ class Server:
                                     self.clients.append(client)
                                     self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_OK"})
                                     logger.log("§8[§eSERVER§8] §aClient '" + data["CLIENT_ID"] + "' authenticated")
-                                    events.call("ON_CLIENT_CONNECT", params=[client], scope=self.eventScope)
+                                    events.call("ON_CLIENT_CONNECT", client, scope=self.eventScope)
                                 else:
                                     self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
                                     break
@@ -105,7 +105,7 @@ class Server:
                                 if client is not None:
                                     if data["METHOD"] not in self.packagePrintBlacklist:
                                         logger.log("§8[§eSERVER§8] §r[IN] " + data["METHOD"])
-                                    events.call("ON_RECEIVE", params=[client, data], scope=self.eventScope)
+                                    events.call("ON_RECEIVE", client, data, scope=self.eventScope)
                                 else:
                                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving not authenticated package: §r" + data["METHOD"])
                 except Exception as e:
@@ -114,7 +114,7 @@ class Server:
                     break
             for client in self.clients:
                 if client["clientSocket"] == clientSocket:
-                    events.call("ON_CLIENT_DISCONNECT", params=[client], scope=self.eventScope)
+                    events.call("ON_CLIENT_DISCONNECT", client, scope=self.eventScope)
                     logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
                     self.clients.remove(client)
             self.clientSocks.remove(clientSocket)
@@ -125,6 +125,15 @@ class Server:
             (client, clientAddress) = self.serverSocket.accept()
             self.clientSocks.append(client)
             Thread(target=clientTask, args=[client, clientAddress]).start()
+
+    def ON_CLIENT_CONNECT(self, function):
+        events.registerEvent(events.Event("ON_CLIENT_CONNECT", function, scope=self.eventScope))
+
+    def ON_CLIENT_DISCONNECT(self, function):
+        events.registerEvent(events.Event("ON_CLIENT_DISCONNECT", function, scope=self.eventScope))
+
+    def ON_RECEIVE(self, function):
+        events.registerEvent(events.Event("ON_RECEIVE", function, scope=self.eventScope))
 
     def addPackageToPrintBlacklist(self, package):
         self.packagePrintBlacklist.append(package)
@@ -152,7 +161,7 @@ class Server:
             if e == BrokenPipeError or "Broken pipe" in str(e):
                 for client in self.clients:
                     if client["clientSocket"] == sock:
-                        events.call("ON_CLIENT_DISCONNECT", params=[client], scope=self.eventScope)
+                        events.call("ON_CLIENT_DISCONNECT", client, scope=self.eventScope)
                         logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
                         self.clients.remove(client)
                 sock.close()

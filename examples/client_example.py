@@ -4,18 +4,17 @@ from threading import Thread
 
 CLIENT = client.Client(password="PASSWORD", clientID="MY_CLIENT_ID", clientType="CLIENT")
 
-def ON_CONNECT(params):
+def ON_CONNECT():
     pass
 
-def ON_RECEIVE(params):
-    data = params[0]
+def ON_RECEIVE(data):
     METHOD = data["METHOD"]
     # recipe the test message
     if METHOD == "TEST":
         print("test:", data["mydata"])
 
-events.registerEvent("ON_CONNECT", ON_CONNECT)
-events.registerEvent("ON_RECEIVE", ON_RECEIVE)
+CLIENT.ON_CONNECT(ON_CONNECT)
+CLIENT.ON_RECEIVE(ON_RECEIVE)
 
 CLIENT.enableEncrypt('SECRET_KEY')
 

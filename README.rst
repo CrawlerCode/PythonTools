@@ -52,28 +52,24 @@ Server and Client (sockets)
 
 .. code:: python
 
-    from pythontools.core import events
     from pythontools.sockets import server
     from threading import Thread
 
     SERVER = server.Server(password="PASSWORD")
 
-    def ON_CLIENT_CONNECT(params):
-        client = params[0]
+    def ON_CLIENT_CONNECT(client):
         # send a message to client on connect by clientSocket
         SERVER.sendTo(client["clientSocket"], {"METHOD": "HELLO"})
 
-    def ON_CLIENT_DISCONNECT(params):
-        client = params[0]
+    def ON_CLIENT_DISCONNECT(client):
+        pass
 
-    def ON_RECEIVE(params):
-        client = params[0]
-        data = params[1]
+    def ON_RECEIVE(client, data):
         METHOD = data["METHOD"]
 
-    events.registerEvent("ON_CLIENT_CONNECT", ON_CLIENT_CONNECT)
-    events.registerEvent("ON_CLIENT_DISCONNECT", ON_CLIENT_DISCONNECT)
-    events.registerEvent("ON_RECEIVE", ON_RECEIVE)
+    SERVER.ON_CLIENT_CONNECT(ON_CLIENT_CONNECT)
+    SERVER.ON_CLIENT_DISCONNECT(ON_CLIENT_DISCONNECT)
+    SERVER.ON_RECEIVE(ON_RECEIVE)
 
     Thread(target=SERVER.start, args=["HOST-IP", 15749]).start()
 
@@ -85,24 +81,22 @@ Server and Client (sockets)
 
 .. code:: python
 
-    from pythontools.core import events
     from pythontools.sockets import client
     from threading import Thread
 
     CLIENT = client.Client(password="PASSWORD", clientID="MY_CLIENT_ID", clientType="CLIENT")
 
-    def ON_CONNECT(params):
+    def ON_CONNECT():
         pass
 
-    def ON_RECEIVE(params):
-        data = params[0]
+    def ON_RECEIVE(data):
         METHOD = data["METHOD"]
         # recipe the test message
         if METHOD == "TEST":
             print("test:", data["mydata"])
 
-    events.registerEvent("ON_CONNECT", ON_CONNECT)
-    events.registerEvent("ON_RECEIVE", ON_RECEIVE)
+    CLIENT.ON_CONNECT(ON_CONNECT)
+    CLIENT.ON_RECEIVE(ON_RECEIVE)
 
     Thread(target=CLIENT.connect, args=["HOST-IP", 15749]).start()
 

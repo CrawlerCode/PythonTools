@@ -94,12 +94,12 @@ class Client:
                                 if data["METHOD"] == "AUTHENTICATION_FAILED":
                                     self.error = 1
                                 elif data["METHOD"] == "AUTHENTICATION_OK":
-                                    events.call("ON_CONNECT", params=[], scope=self.eventScope)
+                                    events.call("ON_CONNECT", scope=self.eventScope)
                                     for package in self.lostPackages:
                                         self.send(package)
                                     self.lostPackages.clear()
-                                else:
-                                    events.call("ON_RECEIVE", params=[data], scope=self.eventScope)
+                                elif data["METHOD"] != "ALIVE_OK":
+                                    events.call("ON_RECEIVE", data, scope=self.eventScope)
                     except Exception as e:
                         self.error = 1
                         logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
@@ -118,6 +118,12 @@ class Client:
             else:
                 clientTask()
         _connect(True)
+
+    def ON_CONNECT(self, function):
+        events.registerEvent(events.Event("ON_CONNECT", function, scope=self.eventScope))
+
+    def ON_RECEIVE(self, function):
+        events.registerEvent(events.Event("ON_RECEIVE", function, scope=self.eventScope))
 
     def startAlive(self):
         def alive():
@@ -148,15 +154,16 @@ class Client:
 
     def sendPackageAndWaitForPackage(self, package, method, maxTime=1.5):
         self.waitReceived = None
-        def ON_RECEIVE(params):
-            if params[0]["METHOD"] == method:
-                self.waitReceived = params[0]
-        events.registerEvent("ON_RECEIVE", ON_RECEIVE, scope=self.eventScope)
+        def ON_RECEIVE(data):
+            if data["METHOD"] == method:
+                self.waitReceived = data
+        event = events.Event("ON_RECEIVE", ON_RECEIVE, scope=self.eventScope)
+        events.registerEvent(event)
         self.send(package)
         startTime = time.time()
         while self.waitReceived is None and (time.time() - startTime) <= maxTime:
             pass
-        events.unregisterEvent(ON_RECEIVE)
+        events.unregisterEvent(event)
         return self.waitReceived
 
     def disconnect(self):
