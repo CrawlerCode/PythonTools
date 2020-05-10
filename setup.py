@@ -21,7 +21,7 @@ if TYPE == "WEBBOT":
 
 setup(
     name='CrawlerCodePythonTools' + ('-Gui' if TYPE == "GUI" else '-WebBot' if TYPE == "WEBBOT" else ''),
-    version='1.2.7',
+    version='1.2.8',
     packages=packages,
     url='https://github.com/CrawlerCode',
     license='',

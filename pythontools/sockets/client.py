@@ -13,6 +13,7 @@ class Client:
         self.error = 0
         self.seq = base64.b64encode(self.password.encode('ascii')).decode("utf-8")
         self.connected = False
+        self.authenticated = False
         self.lostPackages = []
         self.packagePrintBlacklist = []
         self.packagePrintBlacklist.append("ALIVE")
@@ -93,7 +94,9 @@ class Client:
                                     logger.log("§8[§eCLIENT§8] §r[IN] " + data["METHOD"])
                                 if data["METHOD"] == "AUTHENTICATION_FAILED":
                                     self.error = 1
+                                    self.authenticated = False
                                 elif data["METHOD"] == "AUTHENTICATION_OK":
+                                    self.authenticated = True
                                     events.call("ON_CONNECT", scope=self.eventScope)
                                     for package in self.lostPackages:
                                         self.send(package)
@@ -106,6 +109,7 @@ class Client:
                         break
                 self.clientSocket.close()
                 self.connected = False
+                self.authenticated = False
                 logger.log("§8[§eCLIENT§8] §6Disconnected")
                 if self.reconnect is True:
                     logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
