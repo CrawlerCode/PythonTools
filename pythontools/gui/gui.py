@@ -117,6 +117,11 @@ class Onject:
         self.obj.setStyleSheet(type(self.obj).__name__ + "{" + ";".join(self.styles) + "}")
         return self
 
+    def setBorderRadius(self, radius):
+        self.styles.append("border-radius:" + radius)
+        self.obj.setStyleSheet(type(self.obj).__name__ + "{" + ";".join(self.styles) + "}")
+        return self
+
     def setEnabled(self, bool):
         self.obj.setEnabled(bool)
 
@@ -320,6 +325,10 @@ class Window(object):
         self.window.setWindowTitle(title)
         self.window.setFixedSize(width, height)
 
+    def setPosition(self, x, y):
+        self.window.move(x, y)
+        return self
+    
     def onClose(self, on_close):
         self.window.closeEvent = on_close
         return self
@@ -360,10 +369,15 @@ class Window(object):
 
     def show(self):
         self.window.show()
+        return self
+
+    def hide(self):
+        self.window.hide()
+        return self
 
     def close(self):
         self.window.close()
-
+        return self
 
 class MainWindow(Window):
 
@@ -376,4 +390,37 @@ class MainWindow(Window):
         self.window.statusBar().showMessage(text, duration)
         if color is not None:
             self.window.statusBar().setStyleSheet("QStatusBar { color: " + color + " }")
+        return self
+
+class SystemTray:
+
+    def __init__(self, window):
+        self.window = window
+        self.tray = QtWidgets.QSystemTrayIcon(window.window)
+        self.tray.setIcon(window.window.style().standardIcon(QtWidgets.QStyle.SP_ComputerIcon))
+
+    def setIcon(self, b64):
+        icon = QtGui.QIcon()
+        pm = QtGui.QPixmap()
+        pm.loadFromData(base64.b64decode(b64))
+        icon.addPixmap(pm)
+        self.tray.setIcon(icon)
+        return self
+
+    def setContextMenu(self, actions):
+        menu = QtWidgets.QMenu()
+        for action in actions:
+            menu.addAction(action)
+        self.tray.setContextMenu(menu)
+        return self
+
+    def createContextMenuAction(self, name, function):
+        return QtWidgets.QAction(name, self.tray, triggered=function)
+
+    def show(self):
+        self.tray.show()
+        return self
+
+    def showMessage(self, title, message, duration=3000):
+        self.tray.showMessage(title, message, QtWidgets.QSystemTrayIcon.Information, duration)
         return self

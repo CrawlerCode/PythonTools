@@ -1,7 +1,7 @@
-from pythontools.core import logger, events, tools
-import socket, json, time, base64
+from pythontools.core import logger, events
+import socket, json, time, base64, traceback
 from threading import Thread
-from pythontools.dev import crypthography
+from pythontools.dev import crypthography, dev
 
 class Client:
 
@@ -22,6 +22,7 @@ class Client:
         self.waitReceived = None
         self.aliveInterval = 10
         self.printUnsignedData = True
+        self.uploadError = False
         self.eventScope = "global"
         self.encrypt = False
         self.secret_key = b''
@@ -105,7 +106,12 @@ class Client:
                                     events.call("ON_RECEIVE", data, scope=self.eventScope)
                     except Exception as e:
                         self.error = 1
-                        logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
+                        if self.uploadError is True:
+                            try:
+                                link = dev.uploadToHastebin(traceback.format_exc())
+                                logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e) + " §r" + str(link))
+                            except: logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
+                        else: logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cException: §4" + str(e))
                         break
                 self.clientSocket.close()
                 self.connected = False

@@ -1,7 +1,7 @@
 from pythontools.core import logger, events
-import socket, json, base64
+import socket, json, base64, traceback
 from threading import Thread
-from pythontools.dev import crypthography
+from pythontools.dev import crypthography, dev
 
 class Server:
 
@@ -17,6 +17,7 @@ class Server:
         self.packagePrintBlacklist.append("ALIVE_OK")
         self.maxClients = 10
         self.printUnsignedData = True
+        self.uploadError = False
         self.eventScope = "global"
         self.encrypt = False
         self.secret_key = b''
@@ -33,7 +34,6 @@ class Server:
                 self.secret_key = crypthography.generateSecretKey()
                 logger.log("§8[§eSERVER§8] §aSecret-Key generated: " + self.secret_key.decode("utf-8"))
                 return
-        #host = socket.gethostbyname(socket.gethostname())
         logger.log("§8[§eSERVER§8] §6Starting...")
         try:
             self.serverSocket.bind((host, port))
@@ -109,17 +109,24 @@ class Server:
                                 else:
                                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving not authenticated package: §r" + data["METHOD"])
                 except Exception as e:
-                    print(e)
-                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e))
+                    if "Connection reset by peer" in str(e): break
+                    if self.uploadError is True:
+                        try:
+                            link = dev.uploadToHastebin(traceback.format_exc())
+                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e) + " §r" + str(link))
+                        except: logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e))
+                    else: logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cException: §4" + str(e))
                     break
+            p = True
             for client in self.clients:
                 if client["clientSocket"] == clientSocket:
                     events.call("ON_CLIENT_DISCONNECT", client, scope=self.eventScope)
                     logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
                     self.clients.remove(client)
+                    p = False
             self.clientSocks.remove(clientSocket)
             clientSocket.close()
-            logger.log("§8[§eSERVER§8] §6Client disconnected")
+            if p is True: logger.log("§8[§eSERVER§8] §6Client " + str(address) + " disconnected")
 
         while True:
             (client, clientAddress) = self.serverSocket.accept()

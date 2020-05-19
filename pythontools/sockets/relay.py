@@ -36,6 +36,7 @@ class Relay:
             events.registerEvent(events.Event("ON_RECEIVE", ON_RECEIVE, scope=serverClient.eventScope))
 
             if self.serverClientEncrypt is True: serverClient.enableEncrypt(self.serverClient_secret_key)
+            serverClient.printUnsignedData = False
             Thread(target=serverClient.connect, args=[serverHost, serverPort]).start()
             self.clients.append({"relayClient": relayClient, "serverClient": serverClient})
 
@@ -44,6 +45,9 @@ class Relay:
                 if c["relayClient"] == client:
                     c["serverClient"].disconnect()
                     self.clients.remove(c)
+            for event in events.events:
+                if event.name == "ON_RECEIVE" and event.scope == client["clientID"]:
+                    events.unregisterEvent(event)
 
         def ON_RECEIVE(client, data):
             for c in self.clients:
@@ -54,4 +58,5 @@ class Relay:
         events.registerEvent(events.Event("ON_CLIENT_DISCONNECT", ON_CLIENT_DISCONNECT))
         events.registerEvent(events.Event("ON_RECEIVE", ON_RECEIVE))
         if self.relayServerEncrypt is True: self.relayServer.enableEncrypt(self.relayServer_secret_key)
+        self.relayServer.printUnsignedData = False
         Thread(target=self.relayServer.start, args=[relayHost, relayPort]).start()

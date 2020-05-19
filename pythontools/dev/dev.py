@@ -1,7 +1,7 @@
 import requests, time
 from pythontools.core import logger
 
-def hastebin(content):
+def uploadToHastebin(content):
     url = 'https://hastebin.com'
     data = ""
     if type(content) == str:
