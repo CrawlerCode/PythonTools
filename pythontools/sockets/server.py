@@ -66,7 +66,7 @@ class Server:
                             recvData = "["
                             for i in range(len(recvDataList)):
                                 if self.encrypt is True:
-                                    recvData += crypthography.decrypt(self.secret_key, base64.b64decode(recvDataList[i].replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8")
+                                    recvData += crypthography.decrypt(self.secret_key, base64.b64decode((recvDataList[i][1:] if i == 0 else recvDataList[i]).replace("}" + self.seq, "").encode('ascii'))).decode("utf-8")
                                     if i + 1 < len(recvDataList):
                                         recvData += ", "
                                 else:
@@ -81,7 +81,11 @@ class Server:
                             else:
                                 recvData = "[" + recvData.replace(self.seq, "") + "]"
                             lastData = ""
-                        recvData = json.loads(recvData)
+                        try:
+                            recvData = json.loads(recvData)
+                        except Exception:
+                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving broken data: §r" + str(recvData))
+                            continue
                         for data in recvData:
                             if data["METHOD"] == "ALIVE":
                                 self.sendTo(clientSocket, {"METHOD": "ALIVE_OK"})
