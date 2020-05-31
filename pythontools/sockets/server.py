@@ -19,17 +19,29 @@ class Server:
         self.printUnsignedData = True
         self.uploadError = False
         self.eventScope = "global"
-        self.encrypt = False
+        self.enabled_encrypt = False
         self.secret_key = b''
+        self.enabled_whitelist_mac = False
+        self.enabled_whitelist_ip = False
+        self.whitelisted_ips = []
+        self.whitelisted_macs = []
 
     def enableEncrypt(self, secret_key):
-        self.encrypt = True
+        self.enabled_encrypt = True
         if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
         if type(secret_key) != bytes: secret_key = b''
         self.secret_key = secret_key
 
+    def enableWhitelistIp(self, ips:list):
+        self.enabled_whitelist_ip = True
+        self.whitelisted_ips = ips
+
+    def enableWhitelistMac(self, macs:list):
+        self.enabled_whitelist_mac = True
+        self.whitelisted_macs = macs
+
     def start(self, host, port):
-        if self.encrypt is True:
+        if self.enabled_encrypt is True:
             if self.secret_key == b'':
                 self.secret_key = crypthography.generateSecretKey()
                 logger.log("§8[§eSERVER§8] §aSecret-Key generated: " + self.secret_key.decode("utf-8"))
@@ -41,11 +53,16 @@ class Server:
             logger.log("§8[§eSERVER§8] §aListening on §6" + str((host, port)))
         except Exception as e:
             logger.log("§8[§eSERVER§8] §8[§cERROR§8] §cFailed: " + str(e))
-            self.error = 1
+            return
         def clientTask(clientSocket, address):
             logger.log("§8[§eSERVER§8] §aClient connected from §6" + str(address))
             lastData = ""
-            while True:
+            error = False
+            if self.enabled_whitelist_ip is True:
+                if address[0] not in self.whitelisted_ips:
+                    error = True
+                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cIp-Address §6'" + str(address[0]) + "'§c not whitelisted!")
+            while error is False:
                 try:
                     recvData = clientSocket.recv(32768)
                     recvData = str(recvData, "utf-8")
@@ -65,7 +82,7 @@ class Server:
                             recvDataList = recvData.split("}" + self.seq + "{")
                             recvData = "["
                             for i in range(len(recvDataList)):
-                                if self.encrypt is True:
+                                if self.enabled_encrypt is True:
                                     recvData += crypthography.decrypt(self.secret_key, base64.b64decode((recvDataList[i][1:] if i == 0 else recvDataList[i]).replace("}" + self.seq, "").encode('ascii'))).decode("utf-8")
                                     if i + 1 < len(recvDataList):
                                         recvData += ", "
@@ -76,7 +93,7 @@ class Server:
                             recvData += "]"
                             lastData = ""
                         elif "}" + self.seq in recvData:
-                            if self.encrypt is True:
+                            if self.enabled_encrypt is True:
                                 recvData = "[" + crypthography.decrypt(self.secret_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8") + "]"
                             else:
                                 recvData = "[" + recvData.replace(self.seq, "") + "]"
@@ -92,17 +109,30 @@ class Server:
                             elif data["METHOD"] == "AUTHENTICATION":
                                 logger.log("§8[§eSERVER§8] §r[IN] " + data["METHOD"])
                                 if data["PASSWORD"] == self.password:
-                                    for c in self.clients:
-                                        if c["clientID"] == data["CLIENT_ID"]:
+                                    if self.enabled_whitelist_mac is True:
+                                        if "MAC" not in data:
+                                            error = True
                                             self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
-                                            break
-                                    client = {"clientSocket": clientSocket, "clientID": data["CLIENT_ID"], "clientType": data["CLIENT_TYPE"]}
-                                    self.clients.append(client)
-                                    self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_OK"})
-                                    logger.log("§8[§eSERVER§8] §aClient '" + data["CLIENT_ID"] + "' authenticated")
-                                    events.call("ON_CLIENT_CONNECT", client, scope=self.eventScope)
+                                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cNo Mac are given!")
+                                        elif data["MAC"] not in self.whitelisted_macs:
+                                            error = True
+                                            self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
+                                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cMac §6'" + str(data["MAC"]) + "'§c not whitelisted!")
+                                    if error is False:
+                                        for c in self.clients:
+                                            if c["clientID"] == data["CLIENT_ID"]:
+                                                self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
+                                                error = True
+                                                break
+                                    if error is False:
+                                        client = {"clientSocket": clientSocket, "clientID": data["CLIENT_ID"], "clientType": data["CLIENT_TYPE"]}
+                                        self.clients.append(client)
+                                        self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_OK"})
+                                        logger.log("§8[§eSERVER§8] §aClient '" + data["CLIENT_ID"] + "' authenticated")
+                                        events.call("ON_CLIENT_CONNECT", client, scope=self.eventScope)
                                 else:
                                     self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
+                                    error = True
                                     break
                             else:
                                 client = self.getClient(clientSocket)
@@ -128,7 +158,8 @@ class Server:
                     logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
                     self.clients.remove(client)
                     p = False
-            self.clientSocks.remove(clientSocket)
+            try: self.clientSocks.remove(clientSocket)
+            except: pass
             clientSocket.close()
             if p is True: logger.log("§8[§eSERVER§8] §6Client " + str(address) + " disconnected")
 
@@ -162,7 +193,7 @@ class Server:
     def sendTo(self, sock, data):
         try:
             send_data = json.dumps(data)
-            if self.encrypt is True:
+            if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
             sock.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
@@ -170,12 +201,17 @@ class Server:
         except Exception as e:
             logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cFailed to send data: " + str(e))
             if e == BrokenPipeError or "Broken pipe" in str(e):
+                p = True
                 for client in self.clients:
                     if client["clientSocket"] == sock:
                         events.call("ON_CLIENT_DISCONNECT", client, scope=self.eventScope)
                         logger.log("§8[§eSERVER§8] §6Client '" + client["clientID"] + "' disconnected")
                         self.clients.remove(client)
+                        p = False
+                try: self.clientSocks.remove(sock)
+                except: pass
                 sock.close()
+                if p is True: logger.log("§8[§eSERVER§8] §6Client disconnected")
 
     def sendToClientID(self, clientID, data):
         for client in self.clients:

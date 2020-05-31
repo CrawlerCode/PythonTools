@@ -105,3 +105,40 @@ def log(message):
     if "§0" in message:
         message = message.replace("§0", Fore.BLACK)
     print("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)
+
+def userInput(message):
+    if "§r" in message:
+        message = message.replace("§r", Fore.RESET)
+    if "§1" in message:
+        message = message.replace("§1", Fore.BLUE)
+    if "§9" in message:
+        message = message.replace("§9", Fore.LIGHTBLUE_EX)
+    if "§b" in message:
+        message = message.replace("§b", Fore.LIGHTCYAN_EX)
+    if "§3" in message:
+        message = message.replace("§3", Fore.CYAN)
+    if "§4" in message:
+        message = message.replace("§4", Fore.RED)
+    if "§c" in message:
+        message = message.replace("§c", Fore.LIGHTRED_EX)
+    if "§6" in message:
+        message = message.replace("§6", Fore.YELLOW)
+    if "§e" in message:
+        message = message.replace("§e", Fore.LIGHTYELLOW_EX)
+    if "§a" in message:
+        message = message.replace("§a", Fore.LIGHTGREEN_EX)
+    if "§2" in message:
+        message = message.replace("§2", Fore.GREEN)
+    if "§5" in message:
+        message = message.replace("§5", Fore.MAGENTA)
+    if "§d" in message:
+        message = message.replace("§d", Fore.LIGHTMAGENTA_EX)
+    if "§f" in message:
+        message = message.replace("§f", Fore.WHITE)
+    if "§7" in message:
+        message = message.replace("§7", Fore.LIGHTWHITE_EX)
+    if "§8" in message:
+        message = message.replace("§8", Fore.LIGHTBLACK_EX)
+    if "§0" in message:
+        message = message.replace("§0", Fore.BLACK)
+    return input("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)

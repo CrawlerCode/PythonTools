@@ -16,6 +16,6 @@ def ON_RECEIVE(data):
 CLIENT.ON_CONNECT(ON_CONNECT)
 CLIENT.ON_RECEIVE(ON_RECEIVE)
 
-CLIENT.enableEncrypt('SECRET_KEY')
+#CLIENT.enableEncrypt('SECRET_KEY')  # optional
 
 Thread(target=CLIENT.connect, args=["HOST-IP", 15749]).start()

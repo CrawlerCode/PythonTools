@@ -17,6 +17,10 @@ SERVER.ON_CLIENT_CONNECT(ON_CLIENT_CONNECT)
 SERVER.ON_CLIENT_DISCONNECT(ON_CLIENT_DISCONNECT)
 SERVER.ON_RECEIVE(ON_RECEIVE)
 
+#SERVER.enableEncrypt('SECRET_KEY')  # optional
+#SERVER.enableWhitelistIp([])  # optional
+#SERVER.enableWhitelistMac([])  # optional
+
 Thread(target=SERVER.start, args=["HOST-IP", 15749]).start()
 
 # send a message to client by clientID

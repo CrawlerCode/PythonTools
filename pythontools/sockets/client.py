@@ -1,5 +1,5 @@
 from pythontools.core import logger, events
-import socket, json, time, base64, traceback
+import socket, json, time, base64, traceback, getmac
 from threading import Thread
 from pythontools.dev import crypthography, dev
 
@@ -10,7 +10,7 @@ class Client:
         self.password = password
         self.clientID = clientID
         self.clientType = clientType
-        self.error = 0
+        self.error = False
         self.seq = base64.b64encode(self.password.encode('ascii')).decode("utf-8")
         self.connected = False
         self.authenticated = False
@@ -24,17 +24,17 @@ class Client:
         self.printUnsignedData = True
         self.uploadError = False
         self.eventScope = "global"
-        self.encrypt = False
+        self.enabled_encrypt = False
         self.secret_key = b''
 
     def enableEncrypt(self, secret_key):
-        self.encrypt = True
+        self.enabled_encrypt = True
         if type(secret_key) == str: secret_key = bytes(secret_key, "utf-8")
         if type(secret_key) != bytes: secret_key = b''
         self.secret_key = secret_key
 
     def connect(self, host, port):
-        if self.encrypt is True:
+        if self.enabled_encrypt is True:
             if self.secret_key == b'':
                 self.secret_key = crypthography.generateSecretKey()
                 logger.log("§8[§eSERVER§8] §aSecret-Key generated: " + self.secret_key.decode("utf-8"))
@@ -45,15 +45,15 @@ class Client:
                 self.clientSocket.connect((socket.gethostbyname(host), port))
                 logger.log("§8[§eCLIENT§8] §aConnected to §6" + str((socket.gethostbyname(host), port)))
                 self.connected = True
-                self.error = 0
+                self.error = False
             except Exception as e:
                 logger.log("§8[§eCLIENT§8] §8[§cERROR§8] §cConnection failed: " + str(e))
-                self.error = 1
+                self.error = True
             def clientTask():
-                if self.error == 0:
-                    self.send({"METHOD": "AUTHENTICATION", "CLIENT_ID": self.clientID, "CLIENT_TYPE": self.clientType, "PASSWORD": self.password})
+                if self.error is False:
+                    self.send({"METHOD": "AUTHENTICATION", "CLIENT_ID": self.clientID, "CLIENT_TYPE": self.clientType, "PASSWORD": self.password, "MAC": str(getmac.get_mac_address()).upper()})
                 lastData = ""
-                while self.error == 0:
+                while self.error is False:
                     try:
                         recvData = self.clientSocket.recv(32768)
                         recvData = str(recvData, "utf-8")
@@ -73,7 +73,7 @@ class Client:
                                 recvDataList = recvData.split("}" + self.seq + "{")
                                 recvData = "["
                                 for i in range(len(recvDataList)):
-                                    if self.encrypt is True:
+                                    if self.enabled_encrypt is True:
                                         recvData += crypthography.decrypt(self.secret_key, base64.b64decode((recvDataList[i][1:] if i == 0 else recvDataList[i]).replace("}" + self.seq, "").encode('ascii'))).decode("utf-8")
                                         if i + 1 < len(recvDataList):
                                             recvData += ", "
@@ -84,7 +84,7 @@ class Client:
                                 recvData += "]"
                                 lastData = ""
                             elif "}" + self.seq in recvData:
-                                if self.encrypt is True:
+                                if self.enabled_encrypt is True:
                                     recvData = "[" + crypthography.decrypt(self.secret_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8") + "]"
                                 else:
                                     recvData = "[" + recvData.replace(self.seq, "") + "]"
@@ -98,7 +98,7 @@ class Client:
                                 if data["METHOD"] not in self.packagePrintBlacklist:
                                     logger.log("§8[§eCLIENT§8] §r[IN] " + data["METHOD"])
                                 if data["METHOD"] == "AUTHENTICATION_FAILED":
-                                    self.error = 1
+                                    self.error = True
                                     self.authenticated = False
                                 elif data["METHOD"] == "AUTHENTICATION_OK":
                                     self.authenticated = True
@@ -109,7 +109,7 @@ class Client:
                                 elif data["METHOD"] != "ALIVE_OK":
                                     events.call("ON_RECEIVE", data, scope=self.eventScope)
                     except Exception as e:
-                        self.error = 1
+                        self.error = True
                         if self.uploadError is True:
                             try:
                                 link = dev.uploadToHastebin(traceback.format_exc())
@@ -142,11 +142,11 @@ class Client:
     def startAlive(self):
         def alive():
             time.sleep(self.aliveInterval)
-            while self.error == 0:
+            while self.error is False:
                 try:
                     self.send({"METHOD": "ALIVE"})
                 except:
-                    self.error = 1
+                    self.error = True
                     break
                 time.sleep(self.aliveInterval)
         Thread(target=alive).start()
@@ -157,12 +157,13 @@ class Client:
     def send(self, data, savePackage=True):
         try:
             send_data = json.dumps(data)
-            if self.encrypt is True:
+            if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
             self.clientSocket.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eCLIENT§8] §r[OUT] " + data["METHOD"])
-        except:
+        except Exception as e:
+            logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cFailed to send data: " + str(e))
             if not self.connected and savePackage is True:
                 self.lostPackages.append(data)
 
