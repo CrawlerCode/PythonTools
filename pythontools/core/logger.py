@@ -1,6 +1,6 @@
 from colorama import init
 from colorama import Fore, Back, Style
-import time, os
+import time, os, stdiomask
 from pythontools.core import tools
 
 init()
@@ -106,7 +106,7 @@ def log(message):
         message = message.replace("§0", Fore.BLACK)
     print("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)
 
-def userInput(message):
+def userInput(message, password=False):
     if "§r" in message:
         message = message.replace("§r", Fore.RESET)
     if "§1" in message:
@@ -141,4 +141,7 @@ def userInput(message):
         message = message.replace("§8", Fore.LIGHTBLACK_EX)
     if "§0" in message:
         message = message.replace("§0", Fore.BLACK)
-    return input("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)
+    if password is True:
+        return str(stdiomask.getpass(prompt="[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL))
+    else:
+        return input("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)

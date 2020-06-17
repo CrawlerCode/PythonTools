@@ -88,6 +88,8 @@ class App(object):
     def setSysExitOperationToAppExit(self):
         sys.exit(self.app.exec_())
 
+    def exit(self):
+        self.app.exit()
 
 class Onject:
 
@@ -379,6 +381,10 @@ class Window(object):
         self.window.close()
         return self
 
+    def destroy(self):
+        self.window.destroy()
+        return self
+
 class MainWindow(Window):
 
     def __init__(self, title, width, height):
@@ -394,10 +400,9 @@ class MainWindow(Window):
 
 class SystemTray:
 
-    def __init__(self, window):
-        self.window = window
-        self.tray = QtWidgets.QSystemTrayIcon(window.window)
-        self.tray.setIcon(window.window.style().standardIcon(QtWidgets.QStyle.SP_ComputerIcon))
+    def __init__(self, app):
+        self.tray = QtWidgets.QSystemTrayIcon(app.app)
+        self.tray.setIcon(app.app.style().standardIcon(QtWidgets.QStyle.SP_ComputerIcon))
 
     def setIcon(self, b64):
         icon = QtGui.QIcon()

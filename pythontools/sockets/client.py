@@ -119,13 +119,17 @@ class Client:
                         break
                 self.clientSocket.close()
                 self.connected = False
-                self.authenticated = False
                 logger.log("§8[§eCLIENT§8] §6Disconnected")
                 if self.reconnect is True:
-                    logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
-                    time.sleep(10)
+                    if self.authenticated is False:
+                        logger.log("§8[§eCLIENT§8] §6Reconnect in 60 seconds")
+                        time.sleep(60)
+                    else:
+                        logger.log("§8[§eCLIENT§8] §6Reconnect in 10 seconds")
+                        time.sleep(10)
                     self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     _connect(False)
+                self.authenticated = False
             self.startAlive()
             if first is True:
                 Thread(target=clientTask).start()

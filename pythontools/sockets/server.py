@@ -113,11 +113,11 @@ class Server:
                                         if "MAC" not in data:
                                             error = True
                                             self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
-                                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cNo Mac are given!")
+                                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cNo MAC are given!")
                                         elif data["MAC"] not in self.whitelisted_macs:
                                             error = True
                                             self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
-                                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cMac §6'" + str(data["MAC"]) + "'§c not whitelisted!")
+                                            logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cMAC §6'" + str(data["MAC"]) + "'§c not whitelisted!")
                                     if error is False:
                                         for c in self.clients:
                                             if c["clientID"] == data["CLIENT_ID"]:
@@ -128,7 +128,7 @@ class Server:
                                         client = {"clientSocket": clientSocket, "clientID": data["CLIENT_ID"], "clientType": data["CLIENT_TYPE"]}
                                         self.clients.append(client)
                                         self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_OK"})
-                                        logger.log("§8[§eSERVER§8] §aClient '" + data["CLIENT_ID"] + "' authenticated")
+                                        logger.log("§8[§eSERVER§8] §aClient '" + data["CLIENT_ID"] + "' authenticated §6('" + data["MAC"] + "')")
                                         events.call("ON_CLIENT_CONNECT", client, scope=self.eventScope)
                                 else:
                                     self.sendTo(clientSocket, {"METHOD": "AUTHENTICATION_FAILED"})
