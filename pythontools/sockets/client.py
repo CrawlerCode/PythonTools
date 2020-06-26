@@ -52,11 +52,22 @@ class Client:
             def clientTask():
                 if self.error is False:
                     self.send({"METHOD": "AUTHENTICATION", "CLIENT_ID": self.clientID, "CLIENT_TYPE": self.clientType, "PASSWORD": self.password, "MAC": str(getmac.get_mac_address()).upper()})
+                lastData = ""
                 while self.error is False:
                     try:
-                        data_length = int(self.clientSocket.recv(128))
-                        recvData = self.clientSocket.recv(data_length)
+                        recvData = self.clientSocket.recv(32768)
                         recvData = str(recvData, "utf-8")
+                        if not recvData.startswith("{"):
+                            if recvData.endswith("}" + self.seq):
+                                if lastData != "":
+                                    recvData = lastData + recvData
+                                    if self.printUnsignedData:
+                                        logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                        if not recvData.endswith("}" + self.seq):
+                            lastData += recvData
+                            if self.printUnsignedData:
+                                logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
+                            continue
                         if recvData != "":
                             if "}" + self.seq + "{" in recvData:
                                 recvDataList = recvData.split("}" + self.seq + "{")
@@ -71,15 +82,13 @@ class Client:
                                         if i + 1 < len(recvDataList):
                                             recvData += "}, {"
                                 recvData += "]"
+                                lastData = ""
                             elif "}" + self.seq in recvData:
                                 if self.enabled_encrypt is True:
                                     recvData = "[" + crypthography.decrypt(self.secret_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8") + "]"
                                 else:
                                     recvData = "[" + recvData.replace(self.seq, "") + "]"
-                            else:
-                                if self.printUnsignedData:
-                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
-                                continue
+                                lastData = ""
                             try:
                                 recvData = json.loads(recvData)
                             except Exception:
@@ -154,10 +163,7 @@ class Client:
             send_data = json.dumps(data)
             if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
-            send_data = bytes(send_data + self.seq, "utf-8")
-            data_length = len(send_data)
-            self.clientSocket.send(bytes(str(data_length) + " "*(128-len(str(data_length))), "utf-8"))
-            self.clientSocket.send(send_data)
+            self.clientSocket.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eCLIENT§8] §r[OUT] " + data["METHOD"])
         except Exception as e:

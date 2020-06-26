@@ -61,12 +61,23 @@ class Server:
                 if address[0] not in self.whitelisted_ips:
                     error = True
                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cIp-Address §6'" + str(address[0]) + "'§c not whitelisted!")
+            lastData = ""
             while error is False:
                 try:
-                    data_length = int(clientSocket.recv(128))
-                    recvData = clientSocket.recv(data_length)
+                    recvData = clientSocket.recv(32768)
                     recvData = str(recvData, "utf-8")
                     if recvData != "":
+                        if not recvData.startswith("{"):
+                            if recvData.endswith("}" + self.seq):
+                                if lastData != "":
+                                    recvData = lastData + recvData
+                                    if self.printUnsignedData:
+                                        logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                        if not recvData.endswith("}" + self.seq):
+                            lastData += recvData
+                            if self.printUnsignedData:
+                                logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
+                            continue
                         if "}" + self.seq + "{" in recvData:
                             recvDataList = recvData.split("}" + self.seq + "{")
                             recvData = "["
@@ -80,15 +91,13 @@ class Server:
                                     if i + 1 < len(recvDataList):
                                         recvData += "}, {"
                             recvData += "]"
+                            lastData = ""
                         elif "}" + self.seq in recvData:
                             if self.enabled_encrypt is True:
                                 recvData = "[" + crypthography.decrypt(self.secret_key, base64.b64decode(recvData.replace("}" + self.seq, "")[1:].encode('ascii'))).decode("utf-8") + "]"
                             else:
                                 recvData = "[" + recvData.replace(self.seq, "") + "]"
-                        else:
-                            if self.printUnsignedData:
-                                logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
-                            continue
+                            lastData = ""
                         try:
                             recvData = json.loads(recvData)
                         except Exception:
@@ -134,7 +143,7 @@ class Server:
                                 else:
                                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving not authenticated package: §r" + data["METHOD"])
                 except Exception as e:
-                    if "Connection reset by peer" in str(e) or "Connection timed out" in str(e): break
+                    if "Connection reset by peer" in str(e) or "Connection timed out" in str(e) or "Bad file descriptor" in str(e): break
                     if self.uploadError is True:
                         try:
                             link = dev.uploadToHastebin(traceback.format_exc())
@@ -188,10 +197,7 @@ class Server:
             send_data = json.dumps(data)
             if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
-            send_data = bytes(send_data + self.seq, "utf-8")
-            data_length = len(send_data)
-            sock.send(bytes(str(data_length) + " " * (128 - len(str(data_length))), "utf-8"))
-            sock.send(send_data)
+            sock.send(bytes(send_data + self.seq, "utf-8"))
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
         except Exception as e:

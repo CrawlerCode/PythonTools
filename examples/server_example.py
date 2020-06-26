@@ -24,4 +24,4 @@ SERVER.ON_RECEIVE(ON_RECEIVE)
 Thread(target=SERVER.start, args=["HOST-IP", 15749]).start()
 
 # send a message to client by clientID
-SERVER.sendToClientID("MY_CLIENT_ID", {"METHOD": "TEST", "mydata": "123"})
+#SERVER.sendToClientID("MY_CLIENT_ID", {"METHOD": "TEST", "mydata": "123"})
