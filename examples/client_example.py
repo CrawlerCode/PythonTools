@@ -1,4 +1,3 @@
-from pythontools.core import events
 from pythontools.sockets import client
 from threading import Thread
 
