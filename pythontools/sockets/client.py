@@ -1,5 +1,5 @@
 from pythontools.core import logger, events
-import socket, json, time, base64, traceback, getmac
+import socket, json, time, base64, traceback, getmac, math
 from threading import Thread
 from pythontools.dev import crypthography, dev
 
@@ -57,12 +57,11 @@ class Client:
                     try:
                         recvData = self.clientSocket.recv(32768)
                         recvData = str(recvData, "utf-8")
-                        if not recvData.startswith("{"):
-                            if recvData.endswith("}" + self.seq):
-                                if lastData != "":
-                                    recvData = lastData + recvData
-                                    if self.printUnsignedData:
-                                        logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
+                        if not recvData.startswith("{") and recvData.endswith("}" + self.seq):
+                            if lastData != "":
+                                recvData = lastData + recvData
+                                if self.printUnsignedData:
+                                    logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
                         if not recvData.endswith("}" + self.seq):
                             lastData += recvData
                             if self.printUnsignedData:
@@ -91,7 +90,7 @@ class Client:
                                 lastData = ""
                             try:
                                 recvData = json.loads(recvData)
-                            except Exception:
+                            except:
                                 logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving broken data: §r" + str(recvData))
                                 continue
                             for data in recvData:
@@ -163,7 +162,12 @@ class Client:
             send_data = json.dumps(data)
             if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
-            self.clientSocket.send(bytes(send_data + self.seq, "utf-8"))
+            send_data = bytes(send_data + self.seq, "utf-8")
+            if len(send_data) > 65536:
+                for i in range(math.ceil(len(send_data) / 65536)):
+                    self.clientSocket.send(send_data[65536*i:][:65536])
+            else:
+                self.clientSocket.send(send_data)
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eCLIENT§8] §r[OUT] " + data["METHOD"])
         except Exception as e:

@@ -10,7 +10,7 @@ TYPE = "CORE"
 packages = []
 install_requires = []
 if TYPE == "CORE":
-    packages = ['pythontools.core', 'pythontools.identity', 'pythontools.sockets', 'pythontools.dev']
+    packages = ['pythontools.core', 'pythontools.identity', 'pythontools.sockets', 'pythontools.dev', 'pythontools.telegram']
     install_requires.extend(['colorama', 'getmac', 'stdiomask'])
 if TYPE == "GUI":
     packages.append('pythontools.gui')
@@ -21,7 +21,7 @@ if TYPE == "WEBBOT":
 
 setup(
     name='CrawlerCodePythonTools' + ('-Gui' if TYPE == "GUI" else '-WebBot' if TYPE == "WEBBOT" else ''),
-    version='1.3.2',
+    version='1.3.3',
     packages=packages,
     url='https://github.com/CrawlerCode',
     license='',
