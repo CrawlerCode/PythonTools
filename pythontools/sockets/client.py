@@ -163,11 +163,12 @@ class Client:
             if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
             send_data = bytes(send_data + self.seq, "utf-8")
-            if len(send_data) > 65536:
-                for i in range(math.ceil(len(send_data) / 65536)):
-                    self.clientSocket.send(send_data[65536*i:][:65536])
-            else:
-                self.clientSocket.send(send_data)
+           # if len(send_data) > 65536:
+           #     for i in range(math.ceil(len(send_data) / 65536)):
+           #         self.clientSocket.send(send_data[65536*i:][:65536])
+           # else:
+           #     self.clientSocket.send(send_data)
+            self.clientSocket.send(send_data)
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eCLIENT§8] §r[OUT] " + data["METHOD"])
         except Exception as e:

@@ -165,7 +165,7 @@ class Server:
 
         while True:
             (client, clientAddress) = self.serverSocket.accept()
-            client.settimeout(60)
+            client.settimeout(120)
             self.clientSocks.append(client)
             Thread(target=clientTask, args=[client, clientAddress]).start()
 
@@ -197,10 +197,12 @@ class Server:
             if self.enabled_encrypt is True:
                 send_data = "{" + base64.b64encode(crypthography.encrypt(self.secret_key, send_data)).decode('utf-8') + "}"
             send_data = bytes(send_data + self.seq, "utf-8")
-            if len(send_data) > 65536:
-                for i in range(math.ceil(len(send_data)/65536)):
-                    sock.send(send_data[65536*i:][:65536])
-            else: sock.send(send_data)
+            #if len(send_data) > 65536:
+            #    for i in range(math.ceil(len(send_data)/65536)):
+            #        sock.send(send_data[65536*i:][:65536])
+            #else:
+            #    sock.send(send_data)
+            sock.send(send_data)
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eSERVER§8] §r[OUT] " + data["METHOD"])
         except Exception as e:
