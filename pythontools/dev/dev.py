@@ -55,3 +55,20 @@ def convertTime(seconds, millis=False, millisDecimalPlaces=10):
     if millis:
         return str(round(sec, millisDecimalPlaces)) + "s"
     return str(int(sec)) + "s"
+
+round_robin_indices = []
+
+def getRoundRobinValue(list):
+    obj = None
+    for o in round_robin_indices:
+        if o[0] == list:
+            obj = o
+    if obj is None:
+        obj = [list, 0]
+        round_robin_indices.append(obj)
+    if len(list) >= 0:
+        if obj[1] >= len(list):
+            obj[1] = 0
+        obj[1] += 1
+        return list[obj[1]-1]
+    return None

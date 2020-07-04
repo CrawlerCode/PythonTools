@@ -57,7 +57,7 @@ class Client:
                     try:
                         recvData = self.clientSocket.recv(32768)
                         recvData = str(recvData, "utf-8")
-                        if not recvData.startswith("{") and recvData.endswith("}" + self.seq):
+                        if not recvData.startswith("{") and (recvData.endswith("}" + self.seq) or (lastData + recvData).endswith("}" + self.seq)):
                             if lastData != "":
                                 recvData = lastData + recvData
                                 if self.printUnsignedData:

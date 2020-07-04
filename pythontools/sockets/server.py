@@ -67,12 +67,12 @@ class Server:
                     recvData = clientSocket.recv(32768)
                     recvData = str(recvData, "utf-8")
                     if recvData != "":
-                        if not recvData.startswith("{") and recvData.endswith("}" + self.seq):
+                        if not recvData.startswith("{") and (recvData.endswith("}" + self.seq) or (lastData + recvData).endswith("}" + self.seq)):
                             if lastData != "":
                                 recvData = lastData + recvData
                                 if self.printUnsignedData:
                                     logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cUnsigned data repaired")
-                        if not recvData.endswith("}" + self.seq):
+                        elif not recvData.endswith("}" + self.seq):
                             lastData += recvData
                             if self.printUnsignedData:
                                 logger.log("§8[§eSERVER§8] §8[§cWARNING§8] §cReceiving unsigned data: §r" + recvData)
