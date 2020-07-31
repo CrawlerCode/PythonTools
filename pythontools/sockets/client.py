@@ -185,8 +185,7 @@ class Client:
         events.registerEvent(event)
         self.send(package)
         startTime = time.time()
-        while self.waitReceived is None and (time.time() - startTime) <= maxTime:
-            pass
+        while self.waitReceived is None and (time.time() - startTime) <= maxTime: time.sleep(0.1)
         events.unregisterEvent(event)
         return self.waitReceived
 

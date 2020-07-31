@@ -1,14 +1,19 @@
 from pythontools.core import logger
+from threading import Thread
 
 class Event:
 
-    def __init__(self, name, function, scope="global"):
+    def __init__(self, name, function, scope="global", threaded=False):
         self.name = name
         self.function = function
         self.scope = scope
+        self.threaded = threaded
 
     def call(self, *args, **kwargs):
-        self.function(*args, **kwargs)
+        if self.threaded is True:
+            Thread(target=self.function, args=args, kwargs=kwargs).start()
+        else:
+            self.function(*args, **kwargs)
 
 events = []
 

@@ -106,7 +106,7 @@ def log(message):
         message = message.replace("§0", Fore.BLACK)
     print("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)
 
-def userInput(message, password=False):
+def userInput(message, password=False, strip=True):
     if "§r" in message:
         message = message.replace("§r", Fore.RESET)
     if "§1" in message:
@@ -142,6 +142,8 @@ def userInput(message, password=False):
     if "§0" in message:
         message = message.replace("§0", Fore.BLACK)
     if password is True:
-        return str(stdiomask.getpass(prompt="[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL))
+        response = str(stdiomask.getpass(prompt="[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL))
+        return response.strip() if strip is True else response
     else:
-        return input("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL)
+        print("[" + time.strftime("%H:%M:%S", time.localtime()) + "] " + Style.RESET_ALL + Style.BRIGHT + message + Style.RESET_ALL, end="")
+        return input().strip() if strip is True else input()
