@@ -145,12 +145,14 @@ class Client:
     def startAlive(self):
         def alive():
             time.sleep(self.aliveInterval)
+            failed = False
             while self.error is False:
-                try:
-                    self.send({"METHOD": "ALIVE"})
-                except:
-                    self.error = True
-                    break
+                if self.send({"METHOD": "ALIVE"}, savePackage=False) is False:
+                    if failed is True:
+                        self.error = True
+                        break
+                    if failed is False: failed = True
+                else: failed = False
                 time.sleep(self.aliveInterval)
         Thread(target=alive).start()
 
@@ -171,10 +173,12 @@ class Client:
             self.clientSocket.send(send_data)
             if data["METHOD"] not in self.packagePrintBlacklist:
                 logger.log("§8[§eCLIENT§8] §r[OUT] " + data["METHOD"])
+            return True
         except Exception as e:
             logger.log("§8[§eCLIENT§8] §8[§cWARNING§8] §cFailed to send data: " + str(e))
             if not self.connected and savePackage is True:
                 self.lostPackages.append(data)
+        return False
 
     def sendPackageAndWaitForPackage(self, package, method, maxTime=1.5):
         self.waitReceived = None

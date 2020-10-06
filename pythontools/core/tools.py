@@ -93,6 +93,9 @@ def copyFile(file, dir_path):
 def removeFile(path):
     os.remove(path)
 
+def removeDirectory(path):
+    os.removedirs(path)
+
 def clearDirectory(path):
     for f in os.listdir(path):
         if os.path.isdir(path + "\\" + f):

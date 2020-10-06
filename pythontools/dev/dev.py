@@ -45,7 +45,7 @@ def convertTime(seconds, millis=False, millisDecimalPlaces=10):
         days += 1
         h -= 24
     if days > 0:
-        return str(days) + "d " + str(h) + "h " + str(min) + "m"
+        return str(days) + "d " + str(h) + "h"
     if h > 0:
         return str(h) + "h " + str(min) + "m"
     if min > 0:
