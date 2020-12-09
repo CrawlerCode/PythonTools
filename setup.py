@@ -5,7 +5,7 @@ def readme():
         README = f.read()
     return README
 
-TYPE = "CORE"
+TYPE = "GUI"
 
 packages = []
 install_requires = []
@@ -21,7 +21,7 @@ if TYPE == "WEBBOT":
 
 setup(
     name='CrawlerCodePythonTools' + ('-Gui' if TYPE == "GUI" else '-WebBot' if TYPE == "WEBBOT" else ''),
-    version='1.3.9',
+    version='1.3.11',
     packages=packages,
     url='https://github.com/CrawlerCode',
     license='',
